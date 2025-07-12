@@ -16,38 +16,60 @@ export class SpotifyBrowser {
 		browser: Browser;
 		context: BrowserContext;
 	}> {
+		// kalo browser/context sudah ditutup, re-launch
 		if (!this.browser || !this.context) {
-			const executablePath =
-				process.env.BROWSER_PATH && process.env.BROWSER_PATH.trim() !== ""
-					? process.env.BROWSER_PATH
-					: undefined;
+			try {
+				const executablePath =
+					process.env.BROWSER_PATH && process.env.BROWSER_PATH.trim() !== ""
+						? process.env.BROWSER_PATH
+						: undefined;
+				const launchOptions: LaunchOptions = {
+					headless: true,
+					args: [
+						"--disable-gpu",
+						"--disable-dev-shm-usage",
+						"--disable-setuid-sandbox",
+						"--no-sandbox",
+						"--no-zygote",
+						"--single-process",
+						"--disable-background-timer-throttling",
+						"--disable-backgrounding-occluded-windows",
+						"--disable-renderer-backgrounding",
+					],
+				};
+				if (executablePath) launchOptions.executablePath = executablePath;
 
-			const launchOptions: LaunchOptions = {
-				headless: true,
-				args: [
-					"--disable-gpu",
-					"--disable-dev-shm-usage",
-					"--disable-setuid-sandbox",
-					"--no-sandbox",
-					"--no-zygote",
-					"--single-process",
-					"--disable-background-timer-throttling",
-					"--disable-backgrounding-occluded-windows",
-					"--disable-renderer-backgrounding",
-				],
-			};
+				this.browser = await playwright.chromium.launch(launchOptions);
+				this.context = await this.browser.newContext({
+					userAgent:
+						"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+				});
 
-			if (executablePath) launchOptions.executablePath = executablePath;
-
-			this.browser = await playwright.chromium.launch(launchOptions);
-			this.context = await this.browser.newContext({
-				userAgent:
-					"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-			});
-
-			const initPage = await this.context.newPage();
-			await initPage.goto("https://open.spotify.com/");
-			await initPage.close();
+				const initPage = await this.context.newPage();
+				await initPage.goto("https://open.spotify.com/");
+				await initPage.close();
+			} catch (err) {
+				this.browser = undefined;
+				this.context = undefined;
+				logs("error", "Failed to launch browser or context", err);
+				throw err;
+			}
+		} else {
+			// kalo browser/context di closed, re-launch
+			if (this.browser.isConnected() === false) {
+				logs("warn", "Browser is not connected, relaunching...");
+				this.browser = undefined;
+				this.context = undefined;
+				return this.ensureBrowser();
+			}
+			try {
+				this.context.pages(); // trigger error if context closed
+			} catch {
+				logs("warn", "Context is closed, relaunching...");
+				this.browser = undefined;
+				this.context = undefined;
+				return this.ensureBrowser();
+			}
 		}
 		return { browser: this.browser, context: this.context };
 	}

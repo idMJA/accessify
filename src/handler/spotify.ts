@@ -14,16 +14,24 @@ export class SpotifyTokenHandler {
 
 	constructor() {
 		const initFetch = Date.now();
-		// fetch initial token on startup (without cookies)
-		this.getAccessToken()
-			.then((token) => {
+		const tryInit = async (attempt = 1) => {
+			try {
+				const token = await this.getAccessToken();
 				this.accessToken = token;
 				const elapsed = Date.now() - initFetch;
 				logs("info", `Initial Spotify token fetched in ${elapsed}ms`);
-			})
-			.catch((err) => {
-				logs("warn", "Failed to fetch initial Spotify token", err);
-			});
+			} catch (err) {
+				logs(
+					"warn",
+					`Failed to fetch initial Spotify token (attempt ${attempt})`,
+					err,
+				);
+				if (attempt < 3) {
+					setTimeout(() => tryInit(attempt + 1), 2000 * attempt); // retry with backoff
+				}
+			}
+		};
+		tryInit();
 	}
 
 	// Cleanup method
@@ -70,6 +78,7 @@ export class SpotifyTokenHandler {
 					this.setRefresh();
 					resolve(token);
 				} catch (err) {
+					logs("error", "Error in getAccessToken", err);
 					reject(err);
 				}
 			};

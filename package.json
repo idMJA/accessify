@@ -19,7 +19,7 @@
     "@hono/node-server": "^1.15.0",
     "dotenv": "^17.2.0",
     "hono": "^4.8.4",
-    "playwright": "^1.54.0"
+    "playwright": "1.53.2"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.1.1",
