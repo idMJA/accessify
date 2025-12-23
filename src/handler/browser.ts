@@ -46,7 +46,7 @@ export class SpotifyBrowser {
 				this.browser = await playwright.chromium.launch(launchOptions);
 				this.context = await this.browser.newContext({
 					userAgent:
-						"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+						"Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Mobile Safari/537.36",
 				});
 
 				this.persistentPage = await this.context.newPage();
